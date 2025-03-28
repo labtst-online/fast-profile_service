@@ -6,6 +6,7 @@ from models.profile import Profile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .api.endpoints import router as profile_router
 from .core.config import settings
 from .core.database import async_engine, get_async_session
 
@@ -41,6 +42,9 @@ app = FastAPI(
 )
 
 
+app.include_router(profile_router, prefix="/profiles", tags=["Profiles"])
+
+
 @app.get("/test-db/", summary="Test Database Connection", tags=["Test"])
 async def test_db_connection(
     session: AsyncSession = Depends(get_async_session)
@@ -55,8 +59,8 @@ async def test_db_connection(
         profile = result.scalar_one_or_none()
 
         if profile:
-            logger.info(f"Successfully retrieved profile: {profile.user}")
-            return {"status": "success", "first_user_profile": profile.user}
+            logger.info(f"Successfully retrieved profile: {profile.id}")
+            return {"status": "success", "first_user_profile": profile.id}
         else:
             logger.info("No profile found in the database.")
             return {"status": "success", "message": "No profile found"}
