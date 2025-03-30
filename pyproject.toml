@@ -2,7 +2,7 @@
 name = "profile-service"
 version = "0.1.0"
 description = "Profile service for Boosty Clone"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.15.1",
     "asyncpg>=0.30.0",
