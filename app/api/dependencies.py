@@ -4,26 +4,38 @@ from typing import Annotated
 
 import httpx
 from core.config import settings
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+# from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+bearer_scheme = HTTPBearer()
 
-async def get_current_user_id(request: Request) -> uuid.UUID:
+
+async def get_current_user_id(
+    token: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> uuid.UUID:
     """
     Dependency to verify JWT token by calling auth_service and return user ID
     """
-    token = request.headers.get("Authtorization")
-    if not token or not token.startswith("Bearer "):
-        logger.debug("Header is missing or invalid")
+    # token = request.headers.get("Authtorization")
+    # if not token or not token.startswith("Bearer "):
+    #     logger.debug("Header is missing or invalid")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Unauthtorizarted",
+    #         headers={"WWW-Authenticate": "Bearer"},
+    #     )
+    auth_token = token.credentials
+    if not auth_token: # Should not happen if HTTPBearer worked, but safe check
+        logger.error("HTTPBearer dependency did not provide credentials")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthtorizarted",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token credentials"
+         )
 
     auth_service_url = f"{settings.AUTH_SERVICE_URL}/users/me"
-    headers = {"Authtorization": token}
+    headers = {"Authorization": f"Bearer {auth_token}"}
 
     async with httpx.AsyncClient() as client:
         try:

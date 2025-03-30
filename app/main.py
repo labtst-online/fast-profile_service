@@ -2,9 +2,10 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
-from models.profile import Profile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.profile import Profile
 
 from .api.endpoints import router as profile_router
 from .core.config import settings
