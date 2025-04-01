@@ -81,7 +81,7 @@ if __name__ == "__main__":
     uvicorn.run(
        "app.main:app",
        host="0.0.0.0",
-       port=8000, # Or load from config
+       port=8001, # Or load from config
        reload=(settings.APP_ENV == "development"),
        log_level="info"
    )
