@@ -3,9 +3,10 @@ import uuid
 from typing import Annotated
 
 import httpx
-from core.config import settings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from app.core.config import settings
 
 # from app.core.config import settings
 
@@ -34,7 +35,7 @@ async def get_current_user_id(
              status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token credentials"
          )
 
-    auth_service_url = f"{settings.AUTH_SERVICE_URL}/users/me"
+    auth_service_url = "http://auth_service:8000/users/me"
     headers = {"Authorization": f"Bearer {auth_token}"}
 
     async with httpx.AsyncClient() as client:
