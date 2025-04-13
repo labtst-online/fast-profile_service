@@ -1,11 +1,11 @@
 import logging
 
+from auth_lib import CurrentUserUUID  # Import the type alias
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.exc import IntegrityError  # To catch unique constraint errors
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.api.dependencies import CurrentUserUUID  # Import the type alias
 from app.core.database import get_async_session
 from app.models.profile import Profile
 from app.schemas.profile import ProfileRead, ProfileUpdate
