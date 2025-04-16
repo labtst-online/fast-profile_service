@@ -22,6 +22,7 @@ from sqlmodel import SQLModel
 
 from app.api.endpoints import router
 from app.core.database import get_async_session
+from sqlalchemy.sql import text
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +53,8 @@ TestingAsyncSessionLocal = async_sessionmaker(
 )
 
 
-@pytest_asyncio.fixture(scope="session")
-async def get_test_async_session() -> AsyncGenerator[AsyncSession]:
+@pytest_asyncio.fixture(scope="function")
+async def test_session() -> AsyncGenerator[AsyncSession]:
     """FastAPI dependency for async session."""
     logger.debug("Creating test async session")
     async with TestingAsyncSessionLocal() as session:
@@ -111,3 +112,15 @@ async def client(test_app):
 @pytest_asyncio.fixture
 async def test_user_id():
     return TEST_USER_ID
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup_db(test_session: AsyncSession):
+    """Clean tables before each test."""
+    await test_session.execute(text("DELETE FROM profile"))
+    await test_session.commit()
+    # Start a new transaction for the test
+    await test_session.begin()
+    yield
+    # Cleanup after test
+    await test_session.rollback()
