@@ -2,26 +2,30 @@ import asyncio
 import logging
 import os
 import uuid
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import pytest
 import pytest_asyncio
-from auth_lib import CurrentUserUUID
-from fastapi import Depends
-from httpx import AsyncClient
+from asgi_lifespan import LifespanManager
+from auth_lib.auth import get_current_user_id
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 from sqlmodel import SQLModel
 
+from app.api.endpoints import router
 from app.core.database import get_async_session
-from app.main import app
-
-# from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
+
+TEST_USER_ID = uuid.uuid4()
 
 TEST_POSTGRES_SERVER=os.environ.get("TEST_DATABASE_URL", "localhost")
 TEST_POSTGRES_PORT=os.environ.get("TEST_DATABASE_URL", "5432")
@@ -30,63 +34,80 @@ TEST_POSTGRES_PASSWORD=os.environ.get("TEST_DATABASE_URL", "postgres")
 TEST_POSTGRES_DB=os.environ.get("TEST_DATABASE_URL", "test_profile_db")
 
 TEST_DATABASE_URL = f"postgresql+asyncpg://{TEST_POSTGRES_USER}:{TEST_POSTGRES_PASSWORD}@{TEST_POSTGRES_SERVER}:{TEST_POSTGRES_PORT}/{TEST_POSTGRES_DB}"
+# TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_profile_db"
 
-if not TEST_DATABASE_URL:
-    logger.error("TEST DATABASE not set" )
-    raise RuntimeError
+test_async_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    pool_pre_ping=True,
+    echo=True,
+    future=True,
+    poolclass=NullPool,
+)
 
-engine = create_async_engine(TEST_DATABASE_URL, )  ##poolclass=NullPool
-
-TestingSessionLocal = async_sessionmaker(
-    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False
+TestingAsyncSessionLocal = async_sessionmaker(
+    bind=test_async_engine,
+    autoflush=False,
+    expire_on_commit=False,
+    class_=AsyncSession
 )
 
 
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """ Стандартная фикстура для pytest-asyncio """
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def setup_database():
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-    yield
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
-
-
-@pytest.fixture(scope="function")
-async def db_session() -> AsyncGenerator[AsyncSession]:
-    async with TestingSessionLocal() as session:
-        await session.begin()
+@pytest_asyncio.fixture(scope="session")
+async def get_test_async_session() -> AsyncGenerator[AsyncSession]:
+    """FastAPI dependency for async session."""
+    logger.debug("Creating test async session")
+    async with TestingAsyncSessionLocal() as session:
         try:
             yield session
-        finally:
+            logger.debug("Test session yielded")
+        except Exception:
             await session.rollback()
+            raise
+        finally:
+            await session.close()
+            logger.debug("Test session closed")
 
 
-TEST_USER_ID = uuid.uuid4()
+async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    async with TestingAsyncSessionLocal() as session:
+        yield session
 
 
-async def override_get_current_user_id() -> uuid.UUID:
+@pytest_asyncio.fixture
+async def test_app():
+    @asynccontextmanager
+    async def test_lifespan(app: FastAPI):
+        logger.info("Test application startup...")
+        async with test_async_engine.connect() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+            logger.info("Test database connection successful during startup.")
+
+        yield
+
+        logger.info("Test application shutdown...")
+        await test_async_engine.dispose()
+        logger.info("Database engine disposed.")
+
+    app = FastAPI(
+        lifespan=test_lifespan
+    )
+    app.include_router(router)
+    app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
+    app.dependency_overrides[get_async_session] = override_get_async_session
+
+    async with LifespanManager(app) as manager:
+        logger.info("We're in!")
+        yield manager.app
+
+
+@pytest_asyncio.fixture
+async def client(test_app):
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+        logger.info("Client usage finished.")
+
+
+@pytest_asyncio.fixture
+async def test_user_id():
     return TEST_USER_ID
-
-
-async def override_get_async_session(
-    session: AsyncSession = Depends(db_session)
-) -> AsyncGenerator[AsyncSession]:
-    yield session
-
-
-app.dependency_overrides[get_async_session] = override_get_async_session
-app.dependency_overrides[CurrentUserUUID] = override_get_current_user_id
-
-
-@pytest_asyncio.fixture(scope="function")
-async def client() -> AsyncGenerator[AsyncClient]:
-    async with AsyncClient(app=app, base_url="http://test") as async_client:
-        yield async_client
