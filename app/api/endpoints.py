@@ -1,6 +1,6 @@
 import logging
 
-from auth_lib import CurrentUserUUID  # Import the type alias
+from auth_lib.auth import CurrentUserUUID  # Import the type alias
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession

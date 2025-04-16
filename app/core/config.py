@@ -1,7 +1,7 @@
 import os
 from typing import Any
 
-from pydantic import HttpUrl, PostgresDsn, field_validator
+from pydantic import PostgresDsn, field_validator
 from pydantic_core import MultiHostUrl
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
