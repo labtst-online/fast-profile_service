@@ -55,8 +55,6 @@ async def test_get_my_profile_found(
     assert response_data["display_name"] == unique_username
     assert response_data["bio"] == unique_bio
 
-    await test_session.rollback()
-
 
 @pytest.mark.asyncio
 async def test_create_profile(
@@ -92,8 +90,6 @@ async def test_create_profile(
     assert "updated_at" in response_data
     assert created_profile is not None
     assert created_profile.user_id == test_user_id
-
-    await test_session.rollback()
 
 
 @pytest.mark.asyncio
@@ -134,16 +130,14 @@ async def test_update_profile(
     assert response_data["user_id"] == str(test_user_id)
     assert response_data["display_name"] == unique_username_for_update
     assert response_data["bio"] == unique_bio_for_update
-    assert response_data["id"] == existing_profile.id
+    assert response_data["id"] == str(existing_profile.id)
     assert "created_at" in response_data
     assert "updated_at" in response_data
-    assert response_data["created_at"] == existing_profile.created_at
-    assert response_data["updated_at"] != existing_profile.updated_at
+    assert response_data["created_at"] == existing_profile.created_at.isoformat().replace("+00:00", "Z")
+    assert response_data["updated_at"] != existing_profile.updated_at.isoformat().replace("+00:00", "Z")
     assert response_data["created_at"] != response_data["updated_at"]
     assert updated_profile is not None
     assert updated_profile.user_id == test_user_id
-
-    await test_session.rollback()
 
 
 @pytest.mark.asyncio
@@ -180,13 +174,11 @@ async def test_update_profile_partially(
     assert response_data["user_id"] == str(test_user_id)
     assert response_data["display_name"] == existing_profile.display_name
     assert response_data["bio"] == unique_bio_for_update
-    assert response_data["id"] == existing_profile.id
+    assert response_data["id"] == str(existing_profile.id)
     assert "created_at" in response_data
     assert "updated_at" in response_data
-    assert response_data["created_at"] == existing_profile.created_at
-    assert response_data["updated_at"] != existing_profile.updated_at
+    assert response_data["created_at"] == existing_profile.created_at.isoformat().replace("+00:00", "Z")
+    assert response_data["updated_at"] != existing_profile.updated_at.isoformat().replace("+00:00", "Z")
     assert response_data["created_at"] != response_data["updated_at"]
     assert updated_profile is not None
     assert updated_profile.user_id == test_user_id
-
-    await test_session.rollback()
