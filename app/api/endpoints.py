@@ -1,6 +1,6 @@
 import logging
 
-from auth_lib import CurrentUserUUID  # Import the type alias
+from auth_lib.auth import CurrentUserUUID  # Import the type alias
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,7 +62,8 @@ async def create_or_update_my_profile(
         # Get update data, excluding unset fields to allow partial updates
         update_data = profile_update.model_dump(exclude_unset=True)
         for key, value in update_data.items():
-            setattr(db_profile, key, value)
+            if value is not None:
+                setattr(db_profile, key, value)
         # updated_at is handled by the model/DB config
         session.add(db_profile)
         profile_to_return = db_profile
