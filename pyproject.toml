@@ -13,12 +13,15 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.40",
     "sqlmodel>=0.0.24",
     "uvicorn>=0.34.0",
+    "auth-lib @ git+https://github.com/fotapol/auth-lib.git@main",
+    "asgi-lifespan>=2.1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.5", # For testing async code
+    "pytest-cov>=6.1.1",
     "ruff>=0.11.2",           # Linter/Formatter
 ]
 
@@ -35,3 +38,12 @@ ignore = []
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.ruff.lint.per-file-ignores]
+"app/alembic/**/*" = ["E501", "E402", "F401"]
+"tests/*" = ["F401"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
