@@ -17,7 +17,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.pool import NullPool
-from sqlalchemy.sql import text
 from sqlmodel import SQLModel
 
 from app.api.endpoints import router
@@ -74,7 +73,10 @@ async def test_app():
     @asynccontextmanager
     async def test_lifespan(app: FastAPI):
         logger.info("Test application startup...")
-        async with test_async_engine.connect() as conn:
+        async with test_async_engine.begin() as conn:
+            logger.info("Dropping existing test tables")
+            await conn.run_sync(SQLModel.metadata.drop_all)
+            logger.info("Creating new test tables")
             await conn.run_sync(SQLModel.metadata.create_all)
             logger.info("Test database connection successful during startup.")
 
@@ -105,15 +107,3 @@ async def client(test_app):
 @pytest_asyncio.fixture
 async def test_user_id():
     return TEST_USER_ID
-
-
-@pytest_asyncio.fixture(autouse=True)
-async def cleanup_db(test_session: AsyncSession):
-    """Clean tables before each test."""
-    await test_session.execute(text("DELETE FROM profile"))
-    await test_session.commit()
-    # Start a new transaction for the test
-    await test_session.begin()
-    yield
-    # Cleanup after test
-    await test_session.rollback()
