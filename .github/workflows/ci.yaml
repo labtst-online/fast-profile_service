@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
@@ -21,16 +21,14 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Configure GITHUB_TOKEN for auth-lib
-        run: git config --global url."https://access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+      - name: Configure Git for Private Repo Access
+        run: git config --global url."https://oauth2:${{ secrets.GH_PAT_FOR_AUTH_LIB }}@github.com/".insteadOf "https://github.com/"
 
       - name: Sync all dependencies (including extras)
         run: uv sync --all-extras --upgrade-package auth-lib
 
-      - name: Run ruff lint and auto-fix
-        run: uv run ruff check . --fix
+      - name: Run ruff format check
+        run: uv run ruff format --check .
 
       - name: Run pytest
         run: uv run pytest --maxfail=1 --disable-warnings -q
