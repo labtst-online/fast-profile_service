@@ -1,6 +1,6 @@
 import logging
 
-from auth_lib.auth import CurrentUserUUID  # Import the type alias
+from auth_lib.auth import CurrentUserUUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,7 @@ from app.schemas.profile import ProfileRead, ProfileUpdate
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
 @router.get(
     "/me",
     response_model=ProfileRead,
@@ -20,7 +21,7 @@ router = APIRouter()
     description="Retrieves the profile associated with the authenticated user.",
 )
 async def get_my_profile(
-    user_id: CurrentUserUUID, # Use the dependency alias
+    user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
 ):
     """Fetches the profile for the user identified by the JWT."""
@@ -47,7 +48,7 @@ async def get_my_profile(
 )
 async def create_or_update_my_profile(
     profile_update: ProfileUpdate,
-    user_id: CurrentUserUUID, # Use the dependency alias
+    user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
 ):
     """Creates or updates the profile for the user identified by the JWT."""
@@ -57,23 +58,19 @@ async def create_or_update_my_profile(
     db_profile = result.scalar_one_or_none()
 
     if db_profile:
-        # --- Update existing profile ---
+        # Update existing profile
         logger.info(f"Updating profile for user_id: {user_id}")
-        # Get update data, excluding unset fields to allow partial updates
         update_data = profile_update.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             if value is not None:
                 setattr(db_profile, key, value)
-        # updated_at is handled by the model/DB config
         session.add(db_profile)
         profile_to_return = db_profile
     else:
-        # --- Create new profile ---
+        # Create new profile
         logger.info(f"Creating new profile for user_id: {user_id}")
-        # Create a new Profile instance, merging user_id and update data
         create_data = profile_update.model_dump()
         db_profile = Profile(**create_data, user_id=user_id)
-        # created_at/updated_at handled by model/DB config
         session.add(db_profile)
         profile_to_return = db_profile
 
@@ -82,7 +79,7 @@ async def create_or_update_my_profile(
         await session.refresh(profile_to_return)
         logger.info(f"Successfully committed profile changes for user_id: {user_id}")
         return profile_to_return
-    except IntegrityError: # Should only happen on create if user_id races, but good practice
+    except IntegrityError:
         await session.rollback()
         logger.error(f"Integrity error (likely duplicate user_id) for user_id: {user_id}")
         raise HTTPException(
