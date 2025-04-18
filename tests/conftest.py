@@ -1,28 +1,25 @@
-import asyncio
 import logging
 import os
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-import pytest
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from auth_lib.auth import get_current_user_id
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
 from sqlalchemy.pool import NullPool
+from sqlalchemy.sql import text
 from sqlmodel import SQLModel
 
 from app.api.endpoints import router
 from app.core.database import get_async_session
-from sqlalchemy.sql import text
 
 logger = logging.getLogger(__name__)
 

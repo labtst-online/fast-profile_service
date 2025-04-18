@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 from auth_lib.auth import CurrentUserUUID
-from fastapi import Depends, status
+from fastapi import status
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -133,8 +133,12 @@ async def test_update_profile(
     assert response_data["id"] == str(existing_profile.id)
     assert "created_at" in response_data
     assert "updated_at" in response_data
-    assert response_data["created_at"] == existing_profile.created_at.isoformat().replace("+00:00", "Z")
-    assert response_data["updated_at"] != existing_profile.updated_at.isoformat().replace("+00:00", "Z")
+    assert response_data["created_at"] == existing_profile.created_at.isoformat().replace(
+        "+00:00", "Z"
+    )
+    assert response_data["updated_at"] != existing_profile.updated_at.isoformat().replace(
+        "+00:00", "Z"
+    )
     assert response_data["created_at"] != response_data["updated_at"]
     assert updated_profile is not None
     assert updated_profile.user_id == test_user_id
@@ -177,8 +181,12 @@ async def test_update_profile_partially(
     assert response_data["id"] == str(existing_profile.id)
     assert "created_at" in response_data
     assert "updated_at" in response_data
-    assert response_data["created_at"] == existing_profile.created_at.isoformat().replace("+00:00", "Z")
-    assert response_data["updated_at"] != existing_profile.updated_at.isoformat().replace("+00:00", "Z")
+    assert response_data["created_at"] == existing_profile.created_at.isoformat().replace(
+        "+00:00", "Z"
+    )
+    assert response_data["updated_at"] != existing_profile.updated_at.isoformat().replace(
+        "+00:00", "Z"
+    )
     assert response_data["created_at"] != response_data["updated_at"]
     assert updated_profile is not None
     assert updated_profile.user_id == test_user_id
