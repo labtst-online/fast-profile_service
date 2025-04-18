@@ -21,6 +21,11 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Configure GITHUB_TOKEN for auth_lib
+        run: git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+
       - name: Sync all dependencies (including extras)
         run: uv sync --all-extras
 
