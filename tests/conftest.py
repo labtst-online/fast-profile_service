@@ -4,6 +4,8 @@ import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+os.environ.setdefault("JWT_SECRET_KEY", str(uuid.uuid4()))
+
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from auth_lib.auth import get_current_user_id
