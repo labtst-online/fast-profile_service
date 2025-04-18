@@ -26,9 +26,7 @@ async def test_get_my_profile_not_found(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_my_profile_found(
-    client: AsyncClient,
-    test_user_id: CurrentUserUUID,
-    test_session: AsyncSession
+    client: AsyncClient, test_user_id: CurrentUserUUID, test_session: AsyncSession
 ):
     """
     Check profile found if this one exist in the database
@@ -36,11 +34,7 @@ async def test_get_my_profile_found(
     # given...
     unique_username = str(uuid.uuid4())
     unique_bio = str(uuid.uuid4())
-    existing_profile = Profile(
-        user_id=test_user_id,
-        display_name=unique_username,
-        bio=unique_bio
-    )
+    existing_profile = Profile(user_id=test_user_id, display_name=unique_username, bio=unique_bio)
     test_session.add(existing_profile)
     await test_session.commit()
     await test_session.refresh(existing_profile)
@@ -58,26 +52,20 @@ async def test_get_my_profile_found(
 
 @pytest.mark.asyncio
 async def test_create_profile(
-    client: AsyncClient,
-    test_user_id: CurrentUserUUID,
-    test_session: AsyncSession
+    client: AsyncClient, test_user_id: CurrentUserUUID, test_session: AsyncSession
 ):
     # given...
     unique_username = str(uuid.uuid4())
     unique_bio = str(uuid.uuid4())
     unique_avatar_url = str(uuid.uuid4())
     profile_data = ProfileUpdate(
-        display_name=unique_username,
-        bio=unique_bio,
-        avatar_url=unique_avatar_url
+        display_name=unique_username, bio=unique_bio, avatar_url=unique_avatar_url
     )
 
     # when...
     response = await client.put("/me", json=profile_data.model_dump())
     response_data = response.json()
-    result = await test_session.execute(
-        select(Profile).where(Profile.user_id == test_user_id)
-    )
+    result = await test_session.execute(select(Profile).where(Profile.user_id == test_user_id))
     created_profile = result.scalars().first()
 
     # then...
@@ -94,18 +82,12 @@ async def test_create_profile(
 
 @pytest.mark.asyncio
 async def test_update_profile(
-    client: AsyncClient,
-    test_user_id: CurrentUserUUID,
-    test_session: AsyncSession
+    client: AsyncClient, test_user_id: CurrentUserUUID, test_session: AsyncSession
 ):
     # given...
     unique_username = str(uuid.uuid4())
     unique_bio = str(uuid.uuid4())
-    existing_profile = Profile(
-        user_id=test_user_id,
-        display_name=unique_username,
-        bio=unique_bio
-    )
+    existing_profile = Profile(user_id=test_user_id, display_name=unique_username, bio=unique_bio)
     test_session.add(existing_profile)
     await test_session.commit()
     await test_session.refresh(existing_profile)
@@ -113,16 +95,13 @@ async def test_update_profile(
     unique_username_for_update = str(uuid.uuid4())
     unique_bio_for_update = str(uuid.uuid4())
     profile_data_for_update = ProfileUpdate(
-        display_name=unique_username_for_update,
-        bio=unique_bio_for_update
+        display_name=unique_username_for_update, bio=unique_bio_for_update
     )
 
     # when...
     response = await client.put("/me", json=profile_data_for_update.model_dump())
     response_data = response.json()
-    result = await test_session.execute(
-        select(Profile).where(Profile.user_id == test_user_id)
-    )
+    result = await test_session.execute(select(Profile).where(Profile.user_id == test_user_id))
     updated_profile = result.scalars().first()
 
     # then...
@@ -146,18 +125,12 @@ async def test_update_profile(
 
 @pytest.mark.asyncio
 async def test_update_profile_partially(
-    client: AsyncClient,
-    test_user_id: CurrentUserUUID,
-    test_session: AsyncSession
+    client: AsyncClient, test_user_id: CurrentUserUUID, test_session: AsyncSession
 ):
     # given...
     unique_username = str(uuid.uuid4())
     unique_bio = str(uuid.uuid4())
-    existing_profile = Profile(
-        user_id=test_user_id,
-        display_name=unique_username,
-        bio=unique_bio
-    )
+    existing_profile = Profile(user_id=test_user_id, display_name=unique_username, bio=unique_bio)
     test_session.add(existing_profile)
     await test_session.commit()
     await test_session.refresh(existing_profile)
@@ -168,9 +141,7 @@ async def test_update_profile_partially(
     # when...
     response = await client.put("/me", json=profile_data_for_update.model_dump())
     response_data = response.json()
-    result = await test_session.execute(
-        select(Profile).where(Profile.user_id == test_user_id)
-    )
+    result = await test_session.execute(select(Profile).where(Profile.user_id == test_user_id))
     updated_profile = result.scalars().first()
 
     # then...

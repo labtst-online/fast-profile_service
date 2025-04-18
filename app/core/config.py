@@ -6,10 +6,11 @@ from pydantic_core import MultiHostUrl
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=env_path, extra='ignore')
+    model_config = SettingsConfigDict(env_file=env_path, extra="ignore")
 
     APP_ENV: str = "development"
 

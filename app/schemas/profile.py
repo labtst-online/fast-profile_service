@@ -10,7 +10,7 @@ class ProfileUpdate(SQLModel):
     avatar_url: str | None = None
 
 
-class ProfileRead(ProfileUpdate): # Inherit fields from ProfileUpdate
+class ProfileRead(ProfileUpdate):
     id: uuid.UUID
     user_id: uuid.UUID
     created_at: datetime

@@ -11,8 +11,6 @@ from .api.endpoints import router as profile_router
 from .core.config import settings
 from .core.database import async_engine, get_async_session
 
-# Configure logging
-# Basic config, customize as needed (e.g., structured logging)
 logging.basicConfig(level=logging.INFO if settings.APP_ENV == "production" else logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -30,7 +28,6 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Application shutdown...")
-    # Close the engine connections pool
     await async_engine.dispose()
     logger.info("Database engine disposed.")
 
@@ -39,7 +36,7 @@ app = FastAPI(
     title="Profile Service",
     description="Handles user profiles.",
     version="0.1.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 
@@ -47,9 +44,7 @@ app.include_router(profile_router, prefix="/profiles", tags=["Profiles"])
 
 
 @app.get("/test-db/", summary="Test Database Connection", tags=["Test"])
-async def test_db_connection(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def test_db_connection(session: AsyncSession = Depends(get_async_session)):
     """
     Attempts to retrieve the first user from the database.
     """
@@ -78,10 +73,11 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
-       "app.main:app",
-       host="0.0.0.0",
-       port=8001, # Or load from config
-       reload=(settings.APP_ENV == "development"),
-       log_level="info"
-   )
+        "app.main:app",
+        host="0.0.0.0",
+        port=8001,
+        reload=(settings.APP_ENV == "development"),
+        log_level="info",
+    )

@@ -25,14 +25,13 @@ logger = logging.getLogger(__name__)
 
 TEST_USER_ID = uuid.uuid4()
 
-TEST_POSTGRES_SERVER=os.environ.get("TEST_DATABASE_URL", "localhost")
-TEST_POSTGRES_PORT=os.environ.get("TEST_DATABASE_URL", "5432")
-TEST_POSTGRES_USER=os.environ.get("TEST_DATABASE_URL", "postgres")
-TEST_POSTGRES_PASSWORD=os.environ.get("TEST_DATABASE_URL", "postgres")
-TEST_POSTGRES_DB=os.environ.get("TEST_DATABASE_URL", "test_profile_db")
+TEST_POSTGRES_SERVER = os.environ.get("TEST_DATABASE_URL", "localhost")
+TEST_POSTGRES_PORT = os.environ.get("TEST_DATABASE_URL", "5432")
+TEST_POSTGRES_USER = os.environ.get("TEST_DATABASE_URL", "postgres")
+TEST_POSTGRES_PASSWORD = os.environ.get("TEST_DATABASE_URL", "postgres")
+TEST_POSTGRES_DB = os.environ.get("TEST_DATABASE_URL", "test_profile_db")
 
 TEST_DATABASE_URL = f"postgresql+asyncpg://{TEST_POSTGRES_USER}:{TEST_POSTGRES_PASSWORD}@{TEST_POSTGRES_SERVER}:{TEST_POSTGRES_PORT}/{TEST_POSTGRES_DB}"
-# TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_profile_db"
 
 test_async_engine = create_async_engine(
     TEST_DATABASE_URL,
@@ -43,10 +42,7 @@ test_async_engine = create_async_engine(
 )
 
 TestingAsyncSessionLocal = async_sessionmaker(
-    bind=test_async_engine,
-    autoflush=False,
-    expire_on_commit=False,
-    class_=AsyncSession
+    bind=test_async_engine, autoflush=False, expire_on_commit=False, class_=AsyncSession
 )
 
 
@@ -86,9 +82,7 @@ async def test_app():
         await test_async_engine.dispose()
         logger.info("Database engine disposed.")
 
-    app = FastAPI(
-        lifespan=test_lifespan
-    )
+    app = FastAPI(lifespan=test_lifespan)
     app.include_router(router)
     app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
     app.dependency_overrides[get_async_session] = override_get_async_session
