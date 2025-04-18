@@ -11,9 +11,9 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_profile_db
         ports:
           - 5432:5432
 
@@ -41,4 +41,9 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Run pytest
+        env:
+          TEST_POSTGRES_SERVER: localhost
+          TEST_POSTGRES_USER: postgres
+          TEST_POSTGRES_PASSWORD: postgres
+          TEST_POSTGRES_DB: test_profile_db
         run: uv run pytest --maxfail=1 --disable-warnings -q
