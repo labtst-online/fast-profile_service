@@ -42,9 +42,9 @@ jobs:
 
       - name: Run pytest
         env:
-          TEST_POSTGRES_SERVER: localhost
-          TEST_POSTGRES_USER: postgres
-          TEST_POSTGRES_PASSWORD: postgres
-          TEST_POSTGRES_DB: test_profile_db
+          POSTGRES_SERVER: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postges
+          POSTGRES_DB: test_profile_db
           SQLALCHEMY_DATABASE_URI: postgresql+asyncpg://postgres:postgres@localhost:5432/test_profile_db
         run: uv run pytest --maxfail=1 --disable-warnings -q
