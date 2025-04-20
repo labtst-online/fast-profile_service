@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import NullPool
 from sqlmodel import SQLModel
 
-from app.api.endpoints import router
+from app.api.routers.endpoints import router
 from app.core.database import get_async_session
 
 logger = logging.getLogger(__name__)

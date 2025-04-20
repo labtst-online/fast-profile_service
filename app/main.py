@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.profile import Profile
 
-from .api.endpoints import router as profile_router
+from .api.routers.endpoints import router as profile_router
 from .core.config import settings
 from .core.database import async_engine, get_async_session
 
