@@ -17,7 +17,6 @@ dependencies = [
     "asgi-lifespan>=2.1.0",
     "python-multipart>=0.0.20",
     "aioboto3>=14.1.0",
-    "python-magic>=0.4.27",
 ]
 
 [project.optional-dependencies]
