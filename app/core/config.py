@@ -23,13 +23,17 @@ class Settings(BaseSettings):
 
     SQLALCHEMY_DATABASE_URI: PostgresDsn | None = None
 
+    # AWS S3 Configuration
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+    AWS_S3_BUCKET_NAME: str = "fastboosty-profile-bucket"
+    AWS_S3_REGION: str = "eu-north-1"
+
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     @classmethod
     def assemble_async_db_connection(cls, v: str | None, info: ValidationInfo) -> Any:
         if isinstance(v, str):
-            # If the URI is already provided as a string, use it directly
             return v
-        # Otherwise, build it from components
         values = info.data
         return MultiHostUrl.build(
             scheme="postgresql+asyncpg",
