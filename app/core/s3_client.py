@@ -4,7 +4,7 @@ import uuid
 from contextlib import asynccontextmanager
 
 import aioboto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +47,11 @@ class S3Client:
         try:
             async with self.session.client(service_name="s3") as s3_client:
                 yield s3_client
-        except ClientError as e:
+        except (ClientError, BotoCoreError) as e:
             logger.exception("Failed to create S3 client")
-            raise Exception(f"Unexpected error creating S3 client: {e}")
+            raise Exception(f"Failed to create S3 client: {e}")
         except Exception as e:
-            logger.exception("Failed to create S3 client")
+            logger.exception("Unexpected error creating S3 client")
             raise Exception(f"Unexpected error creating S3 client: {e}")
 
     def _get_file_extension(self, content_type: str | None, filename: str | None) -> str:
@@ -62,7 +62,7 @@ class S3Client:
 
         if content_type:
             extension = mimetypes.guess_extension(content_type)
-            logger.info(f"Extension {extension} recieved successful")
+            logger.debug(f"Extension {extension} recieved successful")
 
         if filename and not extension:
             extension = mimetypes.guess_extension(filename)
@@ -77,7 +77,10 @@ class S3Client:
             return extension
 
         logger.warning(f"Could not determine file extension for content_type='{content_type}'")
-        raise Exception(content_type=content_type, filename=filename)
+        raise Exception(
+            f"Could not determine file extension for content_type='{content_type}',"
+            f" filename='{filename}'"
+        )
 
     async def upload_file(
         self,
@@ -85,7 +88,7 @@ class S3Client:
         content_type: str,
         prefix: str,
         original_filename: str | None = None,
-    ) -> str:
+    ) -> tuple[str, str]:
         """
         Uploads file content to the S3 bucket with a unique name
         """
@@ -100,11 +103,9 @@ class S3Client:
 
         if prefix and not prefix.endswith("/"):
             prefix += "/"
-            logger.debug(f"Prefix was changed on {prefix}")
+            logger.debug(f"Added trailing slash to prefix: {prefix}")
 
-        logger.info(f"The current prefix is {prefix}")
-
-        object_key = f"{prefix}{file_uuid}{extension}"
+        object_key = f"{prefix}{str(file_uuid)}{extension}"
         logger.info(
             f"Attempting to upload to S3: Bucket='{self.bucket_name}',"
             f" Key='{object_key}', ContentType='{content_type}'"
@@ -118,27 +119,29 @@ class S3Client:
                     Body=file_content,
                     ContentType=content_type,
                 )
-            logger.info(f"Successfully uploaded file to {object_key}")
+            logger.info(f"Successfully uploaded file to s3://{self.bucket_name}/{object_key}")
             return str(file_uuid), extension
 
-        except ClientError as e:
-            logger.error(f"S3 ClientError during upload to {object_key}: {e}", exc_info=True)
-            raise Exception(bucket=self.bucket_name, key=object_key, original_exception=e)
+        except (ClientError, BotoCoreError) as e:
+            logger.error(
+                f"S3 ClientError during upload to {object_key}: {e}",
+            )
+            raise Exception(f"S3 upload failed for key {object_key}: {e}")
         except Exception as e:
             logger.error(f"Unexpected error during upload to {object_key}: {e}", exc_info=True)
-            raise Exception(f"An unexpected error occurred during upload: {e}")
+            raise Exception(f"Unexpected error during upload for key {object_key}: {e}")
 
     async def get_file_url(
         self,
-        file_uuid: str,
-        extension: str,
-        prefix: str,
+        object_key: str,
         expires_in: int = 3600,  # 1 hour by default
     ) -> str:
         """
         Generates a pre-signed URL for securely accessing an S3 object via GET request
         """
-        object_key = f"{prefix}/{file_uuid}{extension}"
+        if not object_key:
+            logger.error("Cannot generate pre-signed URL for empty object key.")
+            raise ValueError("object_key cannot be empty")
 
         try:
             async with self._get_client() as s3_client:
@@ -150,11 +153,9 @@ class S3Client:
             logger.info(f"Generated pre-signed URL for {object_key}")
             return presigned_url
 
-        except ClientError as e:
-            logger.error(
-                f"S3 pre-signed URL generation failed for Key='{object_key}': {e}", exc_info=True
-            )
-            raise Exception(bucket=self.bucket_name, key=object_key, original_exception=e)
+        except (ClientError, BotoCoreError) as e:
+            logger.error(f"S3 pre-signed URL generation failed for Key='{object_key}'")
+            raise Exception(f"Failed to generate URL for key {object_key}: {e}")
         except Exception as e:
-            logger.error(f"Unexpected error during upload to {object_key}: {e}", exc_info=True)
-            raise Exception(f"An unexpected error occurred during upload: {e}")
+            logger.error(f"Unexpected error during pre-signed URL generation for {object_key}")
+            raise Exception(f"Unexpected error generating URL for key {object_key}: {e}")
