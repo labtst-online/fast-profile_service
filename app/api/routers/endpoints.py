@@ -1,8 +1,9 @@
 import logging
+from typing import Annotated
 
 from auth_lib.auth import CurrentUserUUID
 from core.s3_client import S3Client
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -47,24 +48,18 @@ async def get_my_profile(
         logger.info(f"Profile not found for user_id: {user_id}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
 
-    avatar_url = None
+    avatar_url: str | None = None
     if profile.avatar_url:
         try:
-            prefix, filename = profile.avatar_url.split('/')
-
-            file_uuid, extension = filename.split('.', 1)
-            extension = f".{extension}"
-
             avatar_url = await s3.get_file_url(
-                file_uuid=file_uuid,
-                extension=extension,
-                prefix=prefix,
-                expires_in=3600
+                object_key=profile.avatar_url, expires_in=ICON_URL_EXPIRY_SECONDS
             )
-        except ValueError:
-            logger.error(f"Invalid S3 path format in avatar_url: {profile.avatar_url}")
+            logger.info(f"Successfully generated avatar URL for user {user_id}")
         except Exception as e:
-            logger.error(f"Failed to generate avatar URL for user {user_id}: {e}")
+            logger.exception(
+                f"Unexpected error generating pre-signed URL for user {user_id},"
+                f" key '{profile.avatar_url}': {e}"
+            )
 
     profile_read = ProfileRead.model_validate(profile)
     profile_read.avatar_url = avatar_url
@@ -82,13 +77,13 @@ async def get_my_profile(
         "or updates the existing one. Uses PUT for idempotency."
     ),
 )
-async def create_or_update_my_profile(
+async def create_or_update_my_profile(  # noqa: PLR0913 : TODO: Divide this func or find another solution to fix an error
     request: Request,
     user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
-    display_name: Form = None,
-    bio: Form = None,
-    icon: UploadFile = None,
+    display_name: Annotated[str | None, Form] = None,
+    bio: Annotated[str | None, Form] = None,
+    icon: Annotated[UploadFile | None, File(None)] = None,
 ):
     """Creates or updates the profile for the user identified by the JWT."""
     try:
@@ -99,17 +94,12 @@ async def create_or_update_my_profile(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="S3 storage service is not configured correctly.",
         )
+    object_key: str | None = None
 
-    update_data = {"display_name": display_name, "bio": bio}
-    avatar_data = {}
-
-    # Process icon upload if present
     if icon:
         try:
-            # Read file content first for safety checks
             contents = await icon.read()
 
-            # Upload to S3 (client handles extension/type validation)
             file_uuid, extension = await s3.upload_file(
                 file_content=contents,
                 content_type=icon.content_type,
@@ -117,15 +107,26 @@ async def create_or_update_my_profile(
                 original_filename=icon.filename,
             )
 
-            # Construct full S3 path from client response
-            avatar_data["avatar_url"] = f"{USER_ICON_PREFIX}{file_uuid}{extension}"
+            object_key = f"{USER_ICON_PREFIX}{file_uuid}{extension}"
         except Exception as e:
-            logger.error(f"Avatar upload failed: {str(e)}")
-            raise HTTPException(400, "Invalid image file") from e
+            logger.error(f"Avatar upload failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Could not determine file type for upload: {e}",
+            )
         finally:
-            await icon.close()
+            if icon:
+                await icon.close()
 
-    update_data = {k: v for k, v in {**update_data, **avatar_data}.items() if v is not None}
+    profile_data_to_update = {
+        "display_name": display_name,
+        "bio": bio,
+    }
+
+    if object_key:
+        profile_data_to_update["avatar_url"] = object_key
+
+    update_data_filtered = {k: v for k, v in profile_data_to_update.items() if v is not None}
 
     # Try to fetch existing profile
     try:
@@ -136,22 +137,18 @@ async def create_or_update_my_profile(
         if db_profile:
             # Update existing profile
             logger.info(f"Updating profile for user_id: {user_id}")
-            for key, value in update_data.items():
-                if hasattr(db_profile, key):
-                    setattr(db_profile, key, value)
-                else:
-                    logger.warning(
-                        f"Model 'Profile' has no attribute '{key}'. Skipping update for this field."
-                    )
+            for key, value in update_data_filtered.items():
+                setattr(db_profile, key, value)
             session.add(db_profile)
             profile_to_return = db_profile
         else:
             # Create new profile
             logger.info(f"Creating new profile for user_id: {user_id}")
-            create_data = update_data
+            create_data = update_data_filtered
             create_data["user_id"] = user_id
-            db_profile = Profile(**create_data, user_id=user_id)
+            db_profile = Profile(**create_data)
             session.add(db_profile)
+            profile_to_return = db_profile
 
         await session.commit()
         await session.refresh(profile_to_return)
