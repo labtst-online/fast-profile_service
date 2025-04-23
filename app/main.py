@@ -28,10 +28,10 @@ async def lifespan(app: FastAPI):
 
     try:
         s3_client = S3Client(
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            bucket_name=settings.AWS_S3_BUCKET_NAME,
-            region_name=settings.AWS_S3_REGION,
+            AWS_ACCESS_KEY_ID=settings.AWS_ACCESS_KEY_ID,
+            AWS_SECRET_ACCESS_KEY=settings.AWS_SECRET_ACCESS_KEY,
+            BUCKET_NAME=settings.AWS_S3_BUCKET_NAME,
+            REGION_NAME=settings.AWS_S3_REGION,
         )
 
         app.state.s3_client = s3_client
