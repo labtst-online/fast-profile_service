@@ -2,13 +2,13 @@ import logging
 from typing import Annotated
 
 from auth_lib.auth import CurrentUserUUID
-from core.s3_client import S3Client
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.database import get_async_session
+from app.core.s3_client import S3Client
 from app.models.profile import Profile
 from app.schemas.profile import ProfileRead
 
@@ -77,13 +77,13 @@ async def get_my_profile(
         "or updates the existing one. Uses PUT for idempotency."
     ),
 )
-async def create_or_update_my_profile(  # noqa: PLR0913 : TODO: Divide this func or find another solution to fix an error
+async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO: Divide this func or find another solution to fix an error
     request: Request,
     user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
     display_name: Annotated[str | None, Form] = None,
     bio: Annotated[str | None, Form] = None,
-    icon: Annotated[UploadFile | None, File(None)] = None,
+    icon: Annotated[UploadFile | None, File] = None,
 ):
     """Creates or updates the profile for the user identified by the JWT."""
     try:
@@ -153,7 +153,6 @@ async def create_or_update_my_profile(  # noqa: PLR0913 : TODO: Divide this func
         await session.commit()
         await session.refresh(profile_to_return)
         logger.info(f"Successfully committed profile changes for user_id: {user_id}")
-        return profile_to_return
     except IntegrityError:
         await session.rollback()
         logger.error(f"Integrity error (likely duplicate user_id) for user_id: {user_id}")
@@ -168,3 +167,21 @@ async def create_or_update_my_profile(  # noqa: PLR0913 : TODO: Divide this func
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not save profile.",
         )
+
+    avatar_url: str | None = None
+    if profile_to_return.avatar_url:
+        try:
+            avatar_url = await s3.get_file_url(
+                object_key=profile_to_return.avatar_url, expires_in=ICON_URL_EXPIRY_SECONDS
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to generate pre-signed URL for response after PUT for user {user_id}: {e}",
+                exc_info=True,
+            )
+
+    response_data = ProfileRead.model_validate(profile_to_return).model_dump()
+    response_data["avatar_url"] = avatar_url
+
+    logger.info(f"Profile update/create successful for user_id: {user_id}. Returning profile.")
+    return response_data
