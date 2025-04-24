@@ -173,7 +173,7 @@ async def test_create_profile_with_icon(
     # given...
     unique_username = str(uuid.uuid4())
     unique_bio = str(uuid.uuid4())
-    unique_icon_content = bytes(str(uuid.uuid4()), 'utf-8')
+    unique_icon_content = bytes(str(uuid.uuid4()), "utf-8")
     profile_form_data = {
         "display_name": unique_username,
         "bio": unique_bio,
@@ -204,7 +204,7 @@ async def test_update_profile_with_icon(
     # given...
     unique_username = str(uuid.uuid4())
     unique_bio = str(uuid.uuid4())
-    unique_icon_content = bytes(str(uuid.uuid4()), 'utf-8')
+    unique_icon_content = bytes(str(uuid.uuid4()), "utf-8")
     existing_profile = Profile(user_id=test_user_id, display_name=unique_username, bio=unique_bio)
     test_session.add(existing_profile)
     await test_session.commit()
@@ -251,7 +251,7 @@ async def test_update_profile_partially_with_icon(
     # given...
     unique_username = str(uuid.uuid4())
     unique_bio = str(uuid.uuid4())
-    unique_icon_content = bytes(str(uuid.uuid4()), 'utf-8')
+    unique_icon_content = bytes(str(uuid.uuid4()), "utf-8")
     existing_profile = Profile(user_id=test_user_id, display_name=unique_username, bio=unique_bio)
     test_session.add(existing_profile)
     await test_session.commit()
