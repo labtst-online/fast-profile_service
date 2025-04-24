@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 
 os.environ.setdefault("JWT_SECRET_KEY", str(uuid.uuid4()))
 
+from unittest.mock import AsyncMock
+
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from auth_lib.auth import get_current_user_id
@@ -21,10 +23,15 @@ from sqlmodel import SQLModel
 
 from app.api.routers.endpoints import router
 from app.core.database import get_async_session
+from app.core.s3_client import S3Client
 
 logger = logging.getLogger(__name__)
 
 TEST_USER_ID = uuid.uuid4()
+MOCK_S3_UPLOAD_UUID = uuid.uuid4()
+MOCK_S3_UPLOAD_EXT = ".png"
+MOCK_S3_OBJECT_KEY = f"icons/{MOCK_S3_UPLOAD_UUID}{MOCK_S3_UPLOAD_EXT}"
+MOCK_PRESIGNED_URL = f"http://mock-s3-server.test/{MOCK_S3_OBJECT_KEY}?sig=123"
 
 TEST_POSTGRES_SERVER = os.environ.get("TEST_DATABASE_URL", "localhost")
 TEST_POSTGRES_PORT = os.environ.get("TEST_DATABASE_URL", "5432")
@@ -80,6 +87,12 @@ async def test_app():
             await conn.run_sync(SQLModel.metadata.create_all)
             logger.info("Test database connection successful during startup.")
 
+        logger.info("Initializing Mock S3 Client")
+        mock_s3_client = AsyncMock(spec=S3Client)
+        mock_s3_client.upload_file.return_value = (str(MOCK_S3_UPLOAD_UUID), MOCK_S3_UPLOAD_EXT)
+        mock_s3_client.get_file_url.return_value = MOCK_PRESIGNED_URL
+
+        app.state.s3_client = mock_s3_client
         yield
 
         logger.info("Test application shutdown...")
