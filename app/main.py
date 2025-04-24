@@ -7,9 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.profile import Profile
 
-from .api.endpoints import router as profile_router
+from .api.routers.endpoints import router as profile_router
 from .core.config import settings
 from .core.database import async_engine, get_async_session
+from .core.s3_client import S3Client
 
 logging.basicConfig(level=logging.INFO if settings.APP_ENV == "production" else logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -24,6 +25,21 @@ async def lifespan(app: FastAPI):
             logger.info("Database connection successful during startup.")
     except Exception as e:
         logger.error(f"Database connection failed during startup: {e}")
+
+    try:
+        s3_client = S3Client(
+            AWS_ACCESS_KEY_ID=settings.AWS_ACCESS_KEY_ID,
+            AWS_SECRET_ACCESS_KEY=settings.AWS_SECRET_ACCESS_KEY,
+            BUCKET_NAME=settings.AWS_S3_BUCKET_NAME,
+            REGION_NAME=settings.AWS_S3_REGION,
+        )
+
+        app.state.s3_client = s3_client
+        logger.info("S3 Client initialized successfully.")
+
+    except Exception as e:
+        logger.error(f"S3 Client initialization failed during startup: {e}")
+        raise RuntimeError()
 
     yield
 

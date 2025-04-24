@@ -15,6 +15,8 @@ dependencies = [
     "uvicorn>=0.34.0",
     "auth-lib @ git+https://github.com/fotapol/auth-lib.git@main",
     "asgi-lifespan>=2.1.0",
+    "python-multipart>=0.0.20",
+    "aioboto3>=14.1.0",
 ]
 
 [project.optional-dependencies]
