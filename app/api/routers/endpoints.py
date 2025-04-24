@@ -81,9 +81,9 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
     request: Request,
     user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
-    display_name: Annotated[str | None, Form] = None,
-    bio: Annotated[str | None, Form] = None,
-    icon: Annotated[UploadFile | None, File] = None,
+    display_name: Annotated[str | None, Form()] = None,
+    bio: Annotated[str | None, Form()] = None,
+    icon: Annotated[UploadFile | None, File()] = None,
 ):
     """Creates or updates the profile for the user identified by the JWT."""
     try:
