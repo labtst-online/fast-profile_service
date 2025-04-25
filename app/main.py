@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+import redis.asyncio as aioredis
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,17 +34,26 @@ async def lifespan(app: FastAPI):
             BUCKET_NAME=settings.AWS_S3_BUCKET_NAME,
             REGION_NAME=settings.AWS_S3_REGION,
         )
-
         app.state.s3_client = s3_client
         logger.info("S3 Client initialized successfully.")
-
     except Exception as e:
         logger.error(f"S3 Client initialization failed during startup: {e}")
         raise RuntimeError()
 
+    try:
+        redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DATABASE}"
+        redis_client = aioredis.from_url(redis_url)
+        await redis_client.ping()
+        app.state.redis_client = redis_client
+        logger.info(f"Redis client connected successfully to {redis_url}")
+    except Exception as e:
+        logger.error(f"Redis connection failed during startup: {e}")
+        app.state.redis_client = None
+
     yield
 
     logger.info("Application shutdown...")
+    await redis_client.close()
     await async_engine.dispose()
     logger.info("Database engine disposed.")
 

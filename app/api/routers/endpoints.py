@@ -1,6 +1,7 @@
 import logging
 from typing import Annotated
 
+import redis.asyncio as aioredis
 from auth_lib.auth import CurrentUserUUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.exc import IntegrityError
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.database import get_async_session
+from app.core.redis_client import get_redis_client
 from app.core.s3_client import S3Client
 from app.models.profile import Profile
 from app.schemas.profile import ProfileRead
@@ -29,8 +31,23 @@ async def get_my_profile(
     request: Request,
     user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
+    redis: aioredis.Redis = Depends(get_redis_client),
 ):
     """Fetches the profile for the user identified by the JWT, including avatar URL from S3."""
+    cache_key = f"profile:me:{user_id}"
+    cache_ttl_seconds = 60
+
+    try:
+        cached_profile = await redis.get(cache_key)
+        if cached_profile:
+            logger.info(f"Cache HIT for user_id: {user_id}")
+            profile_data = ProfileRead.model_validate_json(cached_profile)
+            return profile_data
+    except aioredis.RedisError as e:
+        logger.error(f"Redis error: {e}")
+    except Exception as e:
+        logger.error(f"Error processing cached data for key '{cache_key}': {e}. Fetching from DB.")
+
     try:
         s3: S3Client = request.app.state.s3_client
     except AttributeError:
@@ -64,6 +81,17 @@ async def get_my_profile(
     profile_read = ProfileRead.model_validate(profile)
     profile_read.avatar_url = avatar_url
 
+    try:
+        profile_json_to_cache = profile_read.model_dump_json()
+        await redis.set(cache_key, profile_json_to_cache, ex=cache_ttl_seconds)
+        logger.info(f"Stored profile in cache for user_id: {user_id} with TTL {cache_ttl_seconds}s")
+    except aioredis.RedisError as e:
+        logger.error(
+            f"Redis SET error for key '{cache_key}': {e}. Response served without caching."
+        )
+    except Exception as e:
+        logger.error(f"Error serializing profile data for caching key '{cache_key}': {e}")
+
     logger.info(f"Retrieved profile for user_id: {user_id}")
     return profile_read
 
@@ -81,6 +109,7 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
     request: Request,
     user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
+    redis: aioredis.Redis = Depends(get_redis_client),
     display_name: Annotated[str | None, Form()] = None,
     bio: Annotated[str | None, Form()] = None,
     icon: Annotated[UploadFile | None, File()] = None,
@@ -153,6 +182,22 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
         await session.commit()
         await session.refresh(profile_to_return)
         logger.info(f"Successfully committed profile changes for user_id: {user_id}")
+
+        cache_key = f"profile:me:{user_id}"
+        try:
+            deleted_count = await redis.delete(cache_key)
+            if deleted_count > 0:
+                logger.info(f"Successfully invalidated cache for key: {cache_key}")
+            else:
+                logger.info(
+                    f"Cache key not found or already expired during"
+                    f" invalidation attempt: {cache_key}"
+                )
+        except aioredis.RedisError as e:
+            logger.error(f"Redis cache invalidation error for key '{cache_key}': {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error during cache invalidation for key '{cache_key}': {e}")
+
     except IntegrityError:
         await session.rollback()
         logger.error(f"Integrity error (likely duplicate user_id) for user_id: {user_id}")
