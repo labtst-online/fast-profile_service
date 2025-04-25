@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 async def get_redis_client(request: Request):
     if not hasattr(request.app.state, "redis_client") or request.app.state.redis_client is None:
-        # This should ideally not happen if lifespan is correctly implemented
         logger.error("Redis client not found in application state.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
