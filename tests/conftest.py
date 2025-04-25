@@ -9,6 +9,7 @@ os.environ.setdefault("JWT_SECRET_KEY", str(uuid.uuid4()))
 from unittest.mock import AsyncMock
 
 import pytest_asyncio
+import redis.asyncio as aioredis
 from asgi_lifespan import LifespanManager
 from auth_lib.auth import get_current_user_id
 from fastapi import FastAPI
@@ -92,7 +93,11 @@ async def test_app():
         mock_s3_client.upload_file.return_value = (str(MOCK_S3_UPLOAD_UUID), MOCK_S3_UPLOAD_EXT)
         mock_s3_client.get_file_url.return_value = MOCK_PRESIGNED_URL
 
+        logger.info("Initializing Mock Redis Client")
+        mock_redis_client = AsyncMock(spec=aioredis.Redis)
+
         app.state.s3_client = mock_s3_client
+        app.state.redis_client = mock_redis_client
         yield
 
         logger.info("Test application shutdown...")
