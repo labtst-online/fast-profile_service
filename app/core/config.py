@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     AWS_S3_BUCKET_NAME: str = "fastboosty-profile-bucket"
     AWS_S3_REGION: str = "eu-north-1"
 
+    # Redis Configuration
+    REDIS_HOST: str
+    REDIS_PORT: int = 6379
+    REDIS_DATABASE: int
+
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     @classmethod
     def assemble_async_db_connection(cls, v: str | None, info: ValidationInfo) -> Any:
