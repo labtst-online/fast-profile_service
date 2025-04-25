@@ -47,4 +47,8 @@ jobs:
           POSTGRES_PASSWORD: postges
           POSTGRES_DB: test_profile_db
           SQLALCHEMY_DATABASE_URI: postgresql+asyncpg://postgres:postgres@localhost:5432/test_profile_db
+          AWS_ACCESS_KEY_ID: access_key_id
+          AWS_SECRET_ACCESS_KEY: secret_access_key
+          REDIS_HOST: localhost
+          REDIS_DATABASE: 0
         run: uv run pytest --maxfail=1 --disable-warnings -q
