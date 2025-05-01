@@ -27,7 +27,7 @@ ICON_URL_EXPIRY_SECONDS = 3600 * 24  # 1 day by default
     summary="Get current user's profile",
     description="Retrieves the profile associated with the authenticated user.",
 )
-async def get_my_profile(
+async def get_my_profile(  # noqa: PLR0915
     request: Request,
     user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
@@ -62,8 +62,31 @@ async def get_my_profile(
     profile = result.scalar_one_or_none()
 
     if not profile:
-        logger.info(f"Profile not found for user_id: {user_id}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        logger.info(f"Profile not found for user_id: {user_id}. Creating a default profile.")
+        try:
+            profile = Profile(user_id=user_id)
+            session.add(profile)
+            await session.commit()
+            await session.refresh(profile)
+            logger.info(f"Successfully created default profile for user_id: {user_id}")
+        except IntegrityError:
+            await session.rollback()
+            logger.error(f"Integrity error trying to create default profile for user_id: {user_id}")
+            result = await session.execute(statement)
+            profile = result.scalar_one_or_none()
+            if not profile:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Could not create default profile."
+                )
+        except Exception as e:
+            await session.rollback()
+            logger.exception(f"Error creating default profile for user_id: {user_id} - {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not create default profile."
+            )
+
 
     avatar_url: str | None = None
     if profile.avatar_url:
@@ -101,8 +124,7 @@ async def get_my_profile(
     response_model=ProfileRead,
     summary="Create or update current user's profile",
     description=(
-        "Creates a profile if one doesn't exist for the authenticated user, "
-        "or updates the existing one. Uses PUT for idempotency."
+        "Updates the existing profile for the authenticated user."
     ),
 )
 async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO: Divide this func or find another solution to fix an error
@@ -114,7 +136,7 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
     bio: Annotated[str | None, Form()] = None,
     icon: Annotated[UploadFile | None, File()] = None,
 ):
-    """Creates or updates the profile for the user identified by the JWT."""
+    """Updates the profile for the user identified by the JWT."""
     try:
         s3: S3Client = request.app.state.s3_client
     except AttributeError:
@@ -157,32 +179,37 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
 
     update_data_filtered = {k: v for k, v in profile_data_to_update.items() if v is not None}
 
-    # Try to fetch existing profile
+    if not update_data_filtered:
+         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No update data provided.",
+        )
+
+    # Fetch existing profile
     try:
         statement = select(Profile).where(Profile.user_id == user_id)
         result = await session.execute(statement)
         db_profile = result.scalar_one_or_none()
 
-        if db_profile:
-            # Update existing profile
-            logger.info(f"Updating profile for user_id: {user_id}")
-            for key, value in update_data_filtered.items():
-                setattr(db_profile, key, value)
-            session.add(db_profile)
-            profile_to_return = db_profile
-        else:
-            # Create new profile
-            logger.info(f"Creating new profile for user_id: {user_id}")
-            create_data = update_data_filtered
-            create_data["user_id"] = user_id
-            db_profile = Profile(**create_data)
-            session.add(db_profile)
-            profile_to_return = db_profile
+        if not db_profile:
+            logger.error(f"Attempted to update non-existent profile for user_id: {user_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Profile not found. Cannot update.",
+            )
+
+        # Update existing profile
+        logger.info(f"Updating profile for user_id: {user_id}")
+        for key, value in update_data_filtered.items():
+            setattr(db_profile, key, value)
+        session.add(db_profile)
+        profile_to_return = db_profile
 
         await session.commit()
         await session.refresh(profile_to_return)
-        logger.info(f"Successfully committed profile changes for user_id: {user_id}")
+        logger.info(f"Successfully committed profile update for user_id: {user_id}")
 
+        # Invalidate cache after successful update
         cache_key = f"profile:me:{user_id}"
         try:
             deleted_count = await redis.delete(cache_key)
@@ -200,17 +227,19 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
 
     except IntegrityError:
         await session.rollback()
-        logger.error(f"Integrity error (likely duplicate user_id) for user_id: {user_id}")
+        logger.error(f"Integrity error during profile update for user_id: {user_id}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Profile potentially already exists or data conflict.",
+            detail="Data conflict during profile update.",
         )
+    except HTTPException as http_exc:
+        raise http_exc
     except Exception as e:
         await session.rollback()
-        logger.exception(f"Error saving profile for user_id: {user_id} - {e}")
+        logger.exception(f"Error updating profile for user_id: {user_id} - {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not save profile.",
+            detail="Could not update profile.",
         )
 
     avatar_url: str | None = None
@@ -228,5 +257,5 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
     response_data = ProfileRead.model_validate(profile_to_return).model_dump()
     response_data["avatar_url"] = avatar_url
 
-    logger.info(f"Profile update/create successful for user_id: {user_id}. Returning profile.")
+    logger.info(f"Profile update successful for user_id: {user_id}. Returning updated profile.")
     return response_data
