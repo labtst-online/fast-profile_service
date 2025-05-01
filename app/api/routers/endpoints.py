@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Annotated
 
 import redis.asyncio as aioredis
@@ -77,16 +78,15 @@ async def get_my_profile(  # noqa: PLR0915
             if not profile:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Could not create default profile."
+                    detail="Could not create default profile.",
                 )
         except Exception as e:
             await session.rollback()
             logger.exception(f"Error creating default profile for user_id: {user_id} - {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not create default profile."
+                detail="Could not create default profile.",
             )
-
 
     avatar_url: str | None = None
     if profile.avatar_url:
@@ -123,11 +123,9 @@ async def get_my_profile(  # noqa: PLR0915
     "/me",
     response_model=ProfileRead,
     summary="Create or update current user's profile",
-    description=(
-        "Updates the existing profile for the authenticated user."
-    ),
+    description=("Updates the existing profile for the authenticated user."),
 )
-async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO: Divide this func or find another solution to fix an error
+async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO: Divide this func or find another solution to fix troubles
     request: Request,
     user_id: CurrentUserUUID,
     session: AsyncSession = Depends(get_async_session),
@@ -180,7 +178,7 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
     update_data_filtered = {k: v for k, v in profile_data_to_update.items() if v is not None}
 
     if not update_data_filtered:
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No update data provided.",
         )
@@ -259,3 +257,25 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
 
     logger.info(f"Profile update successful for user_id: {user_id}. Returning updated profile.")
     return response_data
+
+
+@router.get(
+    "/profile/{profile_id}",
+    response_model=ProfileRead,
+    summary="Get a single profile",
+    description="Retrieves the profile",
+)
+async def get_user_profile(
+    profile_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)
+):
+    """Fetches the profile"""
+    statement = select(Profile).where(Profile.id == profile_id)
+    result = await session.execute(statement)
+    profile = result.scalar_one_or_none()
+
+    if not profile:
+        logger.info(f"Post not found for post_id: {profile_id}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+
+    logger.info(f"Retrieved post for post_id: {profile_id}")
+    return profile
