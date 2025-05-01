@@ -23,7 +23,7 @@ The Profile Service is responsible for managing user profile data, including nic
 
 ## Getting Started
 
-> This service depends on the `auth_service`. It's recommended to run the full system using [`fastboosty-deployment`](https://github.com/fastboosty/fastboosty-deployment).
+> This service depends on the `auth_service`. It's recommended to run the full system using [`fastboosty-deployment`](https://github.com/fotapol/fastboosty-deployment).
 
 ### 1. Clone repository
 
