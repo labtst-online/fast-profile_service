@@ -266,16 +266,70 @@ async def create_or_update_my_profile(  # noqa: PLR0912, PLR0913, PLR0915 : TODO
     description="Retrieves the profile",
 )
 async def get_user_profile(
-    profile_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)
+    request: Request,
+    profile_id: uuid.UUID,
+    session: AsyncSession = Depends(get_async_session),
+    redis: aioredis.Redis = Depends(get_redis_client),
 ):
     """Fetches the profile"""
+    cache_key = f"profile:user:{profile_id}"
+    cache_ttl_seconds = 60
+
+    try:
+        cached_profile = await redis.get(cache_key)
+        if cached_profile:
+            logger.info(f"Cache HIT for profile_id: {profile_id}")
+            profile_data = ProfileRead.model_validate_json(cached_profile)
+            return profile_data
+    except aioredis.RedisError as e:
+        logger.error(f"Redis error: {e}")
+    except Exception as e:
+        logger.error(f"Error processing cached data for key '{cache_key}': {e}. Fetching from DB.")
+
+    try:
+        s3: S3Client = request.app.state.s3_client
+    except AttributeError:
+        logger.error("S3Client not found in application state. Check lifespan initialization.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="S3 storage service is not configured correctly.",
+        )
     statement = select(Profile).where(Profile.id == profile_id)
     result = await session.execute(statement)
     profile = result.scalar_one_or_none()
 
     if not profile:
-        logger.info(f"Post not found for post_id: {profile_id}")
+        logger.info(f"Profile not found for post_id: {profile_id}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
 
-    logger.info(f"Retrieved post for post_id: {profile_id}")
-    return profile
+    avatar_url: str | None = None
+    if profile.avatar_url:
+        try:
+            avatar_url = await s3.get_file_url(
+                object_key=profile.avatar_url, expires_in=ICON_URL_EXPIRY_SECONDS
+            )
+            logger.info(f"Successfully generated avatar URL for user {profile_id}")
+        except Exception as e:
+            logger.exception(
+                f"Unexpected error generating pre-signed URL for user {profile_id},"
+                f" key '{profile.avatar_url}': {e}"
+            )
+
+    profile_read = ProfileRead.model_validate(profile)
+    profile_read.avatar_url = avatar_url
+
+    try:
+        profile_json_to_cache = profile_read.model_dump_json()
+        await redis.set(cache_key, profile_json_to_cache, ex=cache_ttl_seconds)
+        logger.info(
+            f"Stored profile in cache for user_id: {profile_id} with TTL {cache_ttl_seconds}s"
+        )
+    except aioredis.RedisError as e:
+        logger.error(
+            f"Redis SET error for key '{cache_key}': {e}. Response served without caching."
+        )
+    except Exception as e:
+        logger.error(f"Error serializing profile data for caching key '{cache_key}': {e}")
+
+    logger.info(f"Retrieved profile for user_id: {profile_id}")
+    return profile_read
