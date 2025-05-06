@@ -18,6 +18,7 @@ dependencies = [
     "python-multipart>=0.0.20",
     "aioboto3>=14.1.0",
     "redis>=5.2.1",
+    "python-semantic-release>=9.21.1",
 ]
 
 [project.optional-dependencies]
