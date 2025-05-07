@@ -321,9 +321,7 @@ async def get_user_profile(
     try:
         profile_json_to_cache = profile_read.model_dump_json()
         await redis.set(cache_key, profile_json_to_cache, ex=cache_ttl_seconds)
-        logger.info(
-            f"Stored profile in cache for user_id: {user_id} with TTL {cache_ttl_seconds}s"
-        )
+        logger.info(f"Stored profile in cache for user_id: {user_id} with TTL {cache_ttl_seconds}s")
     except aioredis.RedisError as e:
         logger.error(
             f"Redis SET error for key '{cache_key}': {e}. Response served without caching."
