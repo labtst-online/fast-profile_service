@@ -231,7 +231,9 @@ async def test_update_profile_partially_with_icon(
 
 
 @pytest.mark.asyncio
-async def test_get_profile_by_id(client: AsyncClient, test_user_id: uuid.UUID, test_session: AsyncSession):
+async def test_get_profile_by_id(
+    client: AsyncClient, test_user_id: uuid.UUID, test_session: AsyncSession
+):
     # given...
     profile = Profile(user_id=test_user_id, display_name="User", bio="Bio")
     test_session.add(profile)
