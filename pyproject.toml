@@ -62,3 +62,8 @@ main = {}
 develop = { match = "develop" }
 "hotfix/.*" = { match = "^hotfix/.*$" }
 "feature/.*" = { match = "^feature/.*$" }
+
+[tool.semantic_release.branches."feature/.*"]
+match = "^feature/.*$"
+upload_to_release = false # Explicitly for feature branches
+build_command = false
