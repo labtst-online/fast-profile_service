@@ -53,8 +53,8 @@ pytest
 
 ## GitHub Actions (CI, CD)
 
-Continuous Integration workflow runs tests and ruff formater check on every push and pull request to the main and develop branches.
-Continuous Delivery workflow build and push image to GHCR.
+* Continuous Integration workflow runs tests and ruff formater check on every push and pull request to the main and develop branches.
+* Continuous Delivery workflow build and push image to GHCR.
 
 ## License
 
