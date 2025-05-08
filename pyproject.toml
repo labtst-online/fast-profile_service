@@ -50,3 +50,15 @@ quote-style = "double"
 testpaths = [
     "tests",
 ]
+
+[tool.semantic_release]
+version_source = "tag"
+upload_to_pypi = false
+upload_to_release = false
+create_release = true
+
+[tool.semantic_release.branches]
+main = {}
+develop = { match = "develop" }
+"hotfix/.*" = { match = "^hotfix/.*$" }
+"feature/.*" = { match = "^feature/.*$" }
