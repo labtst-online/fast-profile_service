@@ -11,8 +11,8 @@ on:
       - 'v*.*.*'
 
 permissions:
-      contents: write
-      packages: write
+  contents: write
+  packages: write
 
 jobs:
   release:
@@ -43,7 +43,7 @@ jobs:
       - name: Semantic Release (bump & tag)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: semantic-release publish
+        run: semantic-release --verbose publish
 
   deploy:
     name: Build & Push Docker Image
@@ -59,14 +59,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Extract version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          VERSION_TAG=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=${VERSION_TAG}" >> $GITHUB_ENV
+          echo "Extracted version: ${VERSION_TAG}"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -76,7 +75,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
