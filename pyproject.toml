@@ -18,11 +18,11 @@ dependencies = [
     "python-multipart>=0.0.20",
     "aioboto3>=14.1.0",
     "redis>=5.2.1",
-    "python-semantic-release>=9.21.1",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "python-semantic-release>=9.21.1",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.5", # For testing async code
     "pytest-cov>=6.1.1",
@@ -52,18 +52,16 @@ testpaths = [
 ]
 
 [tool.semantic_release]
-version_source = "tag"
+version_toml = [
+    "pyproject.toml:project.version"
+]
+branch = "main"
 upload_to_pypi = false
-upload_to_release = false
-create_release = true
-
-[tool.semantic_release.branches]
-main = {}
-develop = { match = "develop" }
-"hotfix/.*" = { match = "^hotfix/.*$" }
-"feature/.*" = { match = "^feature/.*$" }
-
-[tool.semantic_release.branches."feature/.*"]
-match = "^feature/.*$"
-upload_to_release = false # Explicitly for feature branches
-build_command = false
+upload_to_release = true
+version_source = "tag"
+commit_version_number = true
+changelog_file = "CHANGELOG.md"
+commit_message = "chore(release): bump version to v{version}"
+commit_parser_options = { conventional_commits_version = "0.1.0" }
+major_on_breaking = true
+hvcs = "github"
