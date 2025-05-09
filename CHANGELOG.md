@@ -1,47 +1,7 @@
 # CHANGELOG
 
 
-## v0.2.0 (2025-05-08)
-
-### Bug Fixes
-
-- Rename profile_id to user_id in get_user_profile endpoint for consistency and clarity
-  ([`8259596`](https://github.com/fotapol/fastboosty-profile_service/commit/8259596ffcfcf3a019ba2e93b810f5e0792e1aed))
-
-- Update GHCR token reference in CD workflow
-  ([`55312de`](https://github.com/fotapol/fastboosty-profile_service/commit/55312de3b8a610ba3ca409f01ec5c7375865de82))
-
-- Update tests with new logic. Add new tests for new endpoint. Delete deprecated tests.
-  ([`89af643`](https://github.com/fotapol/fastboosty-profile_service/commit/89af6432899fea6184f86c4aea64538d806a465f))
-
-### Chores
-
-- Styling code using ruff formater
-  ([`a41e2c7`](https://github.com/fotapol/fastboosty-profile_service/commit/a41e2c754a85520eb7d205bf022fa6bfaedc80d6))
-
-- Styling code using ruff formater
-  ([`336ea96`](https://github.com/fotapol/fastboosty-profile_service/commit/336ea96d5758838f32edb859371e3c3ee582ccf3))
-
-- Styling code using ruff formater
-  ([`1c00332`](https://github.com/fotapol/fastboosty-profile_service/commit/1c0033260d5e4518ee0741cab68c2a06a9bd78f6))
-
-### Features
-
-- Add Continuous Delivery workflow for automated releases. Update name for ci.yaml
-  ([`0d6b352`](https://github.com/fotapol/fastboosty-profile_service/commit/0d6b3526e6a8b3ca19b66b3ecf65a5b34f7211dd))
-
-- Add profile retrieval endpoint by user ID
-  ([`cfcaa84`](https://github.com/fotapol/fastboosty-profile_service/commit/cfcaa846ef267196fc60e917e9001178d05ac69d))
-
-- Enhance profile retrieval and update logic with default profile creation
-  ([`5cc8f8d`](https://github.com/fotapol/fastboosty-profile_service/commit/5cc8f8dee5cd9f52c6148a3912c729e05c545bf2))
-
-- Implement caching for user profile retrieval and enhance error handling. Add AWS S3 support in
-  get_user_profile endpoint
-  ([`402620a`](https://github.com/fotapol/fastboosty-profile_service/commit/402620abeae522a41aedb054d47c184203766a5a))
-
-
-## v0.1.0 (2025-05-06)
+## v0.1.0 (2025-05-09)
 
 ### Bug Fixes
 
@@ -66,17 +26,39 @@
 - Prevent updating profile fields with None values to allow partial updates
   ([`4de989d`](https://github.com/fotapol/fastboosty-profile_service/commit/4de989d700e47bb68cc5bb3079a005b9490bdfca))
 
+- Refactor CD workflow for improved version extraction and permissions
+  ([`2e54c84`](https://github.com/fotapol/fastboosty-profile_service/commit/2e54c84dd438b1d81ec2dc6f1fc4f66b541c7b76))
+
+- Refactor CD workflow to use workflow_run for CI success confirmation and streamline release
+  process
+  ([`fa1919c`](https://github.com/fotapol/fastboosty-profile_service/commit/fa1919c0e26596a9727b2342a773e6dfc6a37c6c))
+
 - Remove AUTH_SERVICE_URL from config and .env.sample
   ([`ab3eee4`](https://github.com/fotapol/fastboosty-profile_service/commit/ab3eee4284c913481c9f08ff7255af65906eda20))
 
 - Remove unused python-magic dependency from pyproject.toml and uv.lock
   ([`bce9c2c`](https://github.com/fotapol/fastboosty-profile_service/commit/bce9c2c24a2f19fbf2fd09fcc0a2b9217479a625))
 
+- Rename profile_id to user_id in get_user_profile endpoint for consistency and clarity
+  ([`8259596`](https://github.com/fotapol/fastboosty-profile_service/commit/8259596ffcfcf3a019ba2e93b810f5e0792e1aed))
+
 - Set default JWT_SECRET_KEY in conftest.py for correct testing in the ci.yaml
   ([`b97f639`](https://github.com/fotapol/fastboosty-profile_service/commit/b97f6390325db82a5a494d00b2e760686ddb01ca))
 
+- Simplify dependency sync step in CI workflow
+  ([`090d25e`](https://github.com/fotapol/fastboosty-profile_service/commit/090d25e3828cb7232f8cf12ed1bfc461a5d0d6b5))
+
 - Update actions versions and improve Git configuration for private repo access
   ([`74f3d45`](https://github.com/fotapol/fastboosty-profile_service/commit/74f3d4579f20349c8b44980c1e662ae79de61ee6))
+
+- Update CD workflow for improved version extraction and verbosity
+  ([`217cbc8`](https://github.com/fotapol/fastboosty-profile_service/commit/217cbc87254f857b7d16ec9cb60638e663228a14))
+
+- Update Dockerfile and .dockerignore for improved dependency management and build efficiency
+  ([`1782daa`](https://github.com/fotapol/fastboosty-profile_service/commit/1782daa10fccb1d9604f7952344f8832eaa87065))
+
+- Update GHCR token reference in CD workflow
+  ([`55312de`](https://github.com/fotapol/fastboosty-profile_service/commit/55312de3b8a610ba3ca409f01ec5c7375865de82))
 
 - Update import paths and set default values for ProfileUpdate fields
   ([`6b0509c`](https://github.com/fotapol/fastboosty-profile_service/commit/6b0509cf476e41066164e8bb9f6bcdd389ae02bd))
@@ -84,11 +66,34 @@
 - Update PostgreSQL environment variables for CI workflow
   ([`78d4480`](https://github.com/fotapol/fastboosty-profile_service/commit/78d4480486981ad70aa4a3e71b4184e8f2a54bba))
 
+- Update semantic release configuration for feature branches
+  ([`b0e006f`](https://github.com/fotapol/fastboosty-profile_service/commit/b0e006f7183e8ef78fce2135ec8aacfeac2fc2bd))
+
+- Update semantic release configuration for optional dependencies and branch settings
+  ([`bd21a5a`](https://github.com/fotapol/fastboosty-profile_service/commit/bd21a5a0ac84444f51dd334b495f3c27b5565380))
+
+- Update semantic release configuration for release management
+  ([`786c82f`](https://github.com/fotapol/fastboosty-profile_service/commit/786c82f13e6f454365a23ca7ff6fc68a61b39420))
+
 - Update test database lifecycle management in conftest.py
   ([`b687510`](https://github.com/fotapol/fastboosty-profile_service/commit/b687510a989e4252d3dbf055386a6cb56b9585b7))
 
+- Update tests with new logic. Add new tests for new endpoint. Delete deprecated tests.
+  ([`89af643`](https://github.com/fotapol/fastboosty-profile_service/commit/89af6432899fea6184f86c4aea64538d806a465f))
+
 - **profile**: Update port configuration and adjust auth service URL in dependencies
   ([`94bd056`](https://github.com/fotapol/fastboosty-profile_service/commit/94bd05628d6a7e907adbcd512c7dff0d724b6946))
+
+### Chores
+
+- Styling code using ruff formater
+  ([`a41e2c7`](https://github.com/fotapol/fastboosty-profile_service/commit/a41e2c754a85520eb7d205bf022fa6bfaedc80d6))
+
+- Styling code using ruff formater
+  ([`336ea96`](https://github.com/fotapol/fastboosty-profile_service/commit/336ea96d5758838f32edb859371e3c3ee582ccf3))
+
+- Styling code using ruff formater
+  ([`1c00332`](https://github.com/fotapol/fastboosty-profile_service/commit/1c0033260d5e4518ee0741cab68c2a06a9bd78f6))
 
 ### Features
 
@@ -116,6 +121,9 @@
 - Add cleanup fixture to reset database state before each test
   ([`dd5f828`](https://github.com/fotapol/fastboosty-profile_service/commit/dd5f828121478c48c1e243756e4ffea9b8121e99))
 
+- Add Continuous Delivery workflow for automated releases. Update name for ci.yaml
+  ([`0d6b352`](https://github.com/fotapol/fastboosty-profile_service/commit/0d6b3526e6a8b3ca19b66b3ecf65a5b34f7211dd))
+
 - Add GITHUB_TOKEN configuration for auth_lib in CI workflow
   ([`95a601d`](https://github.com/fotapol/fastboosty-profile_service/commit/95a601db45cb673dd18a1241f36d17c4317c54d8))
 
@@ -124,6 +132,9 @@
 
 - Add mock Redis client to test application setup
   ([`2caf82f`](https://github.com/fotapol/fastboosty-profile_service/commit/2caf82f5778490921aba1f3babc32173c2fb4bc4))
+
+- Add profile retrieval endpoint by user ID
+  ([`cfcaa84`](https://github.com/fotapol/fastboosty-profile_service/commit/cfcaa846ef267196fc60e917e9001178d05ac69d))
 
 - Add python-semantic-release package. Update main.py.
   ([`8368819`](https://github.com/fotapol/fastboosty-profile_service/commit/8368819889446498ded055ec4a528f02fbd9eed4))
@@ -140,6 +151,9 @@
 - Add S3Client class for asynchronous file uploads and URL generation
   ([`b33bec4`](https://github.com/fotapol/fastboosty-profile_service/commit/b33bec41f5d9eb3c70375b2560279b912d0d8d63))
 
+- Add semantic release configuration for versioning and branch matching
+  ([`a7815cb`](https://github.com/fotapol/fastboosty-profile_service/commit/a7815cbca5fcee54e3890dd24eb0ece93c47fe79))
+
 - Add test fixtures and database setup for pytest-asyncio integration
   ([`bca7ab2`](https://github.com/fotapol/fastboosty-profile_service/commit/bca7ab20143f6a3b71dee52414698b597c045214))
 
@@ -153,8 +167,15 @@
   as a development dependency for coverage reporting.
   ([`66f3313`](https://github.com/fotapol/fastboosty-profile_service/commit/66f3313a3f13a308417e500a244633b52330263c))
 
+- Enhance profile retrieval and update logic with default profile creation
+  ([`5cc8f8d`](https://github.com/fotapol/fastboosty-profile_service/commit/5cc8f8dee5cd9f52c6148a3912c729e05c545bf2))
+
 - Enhance profile update to include avatar URL generation and improve error handling
   ([`b0af015`](https://github.com/fotapol/fastboosty-profile_service/commit/b0af015bddb29b79ef7d8a6e3441b66c0376acde))
+
+- Implement caching for user profile retrieval and enhance error handling. Add AWS S3 support in
+  get_user_profile endpoint
+  ([`402620a`](https://github.com/fotapol/fastboosty-profile_service/commit/402620abeae522a41aedb054d47c184203766a5a))
 
 - Implement upload_icon endpoint for S3 file uploads
   ([`7858b1f`](https://github.com/fotapol/fastboosty-profile_service/commit/7858b1f4da76a66574e9fa6fe37c5507704f6732))
