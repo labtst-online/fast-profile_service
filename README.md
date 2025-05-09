@@ -28,8 +28,8 @@ The Profile Service is responsible for managing user profile data, including nic
 ### 1. Clone repository
 
 ```bash
-git clone https://github.com/fastboosty/fastboosty-profile.git
-cd fastboosty-profile
+git clone https://github.com/fotapol/fastboosty-profile_service.git
+cd fastboosty-profile_service
 ```
 
 ### 2. Configure
