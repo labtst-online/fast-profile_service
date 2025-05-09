@@ -1,6 +1,6 @@
-# FastBoosty – Profile Service
+# Profile Service
 
-The Profile Service is responsible for managing user profile data, including nickname, avatar icons, personal descriptions. It is part of the **FastBoosty** app.
+The Profile Service is responsible for managing user profile data, including nickname, avatar icons, personal descriptions. It is part of the FastAPI app.
 
 ## Tech Stack
 
@@ -9,7 +9,7 @@ The Profile Service is responsible for managing user profile data, including nic
 - **Redis** – Caching and temporary storage
 - **Docker** – Containerization
 - **AWS S3** – Storage for user-uploaded icons
-- **GitHub Actions** – Continuous Integration (CI)
+- **GitHub Actions** – Continuous Integration and Continuous Delivery
 - **Pytest** – Test framework
 
 ## API Endpoints
@@ -23,13 +23,13 @@ The Profile Service is responsible for managing user profile data, including nic
 
 ## Getting Started
 
-> This service depends on the `auth_service`. It's recommended to run the full system using [`fastboosty-deployment`](https://github.com/fotapol/fastboosty-deployment).
+> This service depends on the `auth_service`. It's recommended to run the full system using [`fast-deployment`](https://github.com/labtst-online/fast-deployment).
 
 ### 1. Clone repository
 
 ```bash
-git clone https://github.com/fastboosty/fastboosty-profile.git
-cd fastboosty-profile
+git clone https://github.com/labtst-online/fast-profile_service.git
+cd fast-profile_service
 ```
 
 ### 2. Configure
@@ -37,7 +37,7 @@ cd fastboosty-profile
 ```bash
 cp .env.sample .env
 ```
-> Change varibles before `docker-compose up`
+> Change variables before `docker-compose up`
 
 ### 3. Run with Docker
 
@@ -51,10 +51,11 @@ docker-compose up --build
 pytest
 ```
 
-## GitHub Actions(CI)
+## GitHub Actions (CI, CD)
 
-GitHub Actions workflow runs tests and ruff formater check on every push and pull request to the main and develop branches.
+* Continuous Integration workflow runs tests and ruff formater check on every push and pull request to the main and develop branches.
+* Continuous Delivery workflow build and push image to GHCR.
 
 ## License
 
-The Fastboosty Profile Service is licensed under the terms of the MIT license.
+This repository is licensed under the terms of the MIT license.
