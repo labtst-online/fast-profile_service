@@ -1,7 +1,7 @@
 [project]
 name = "profile-service"
 version = "0.1.0"
-description = "Profile service for Boosty Clone"
+description = "Profile service for FastAPI app"
 requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.15.1",
